@@ -1,9 +1,4 @@
-import {
-    QueryTweetsResponse,
-    Scraper,
-    SearchMode,
-    Tweet,
-} from "goat-x";
+import { QueryTweetsResponse, Scraper, SearchMode, Tweet } from "goat-x";
 import { EventEmitter } from "events";
 import fs from "fs";
 import path from "path";
@@ -215,9 +210,13 @@ export class ClientBase extends EventEmitter {
                         fs.readFileSync(cookiesFilePath, "utf-8")
                     );
                     await this.setCookiesFromArray(cookiesArray);
-                    console.log("Successfully loaded and set cookies from file");
+                    console.log(
+                        "Successfully loaded and set cookies from file"
+                    );
                 } else {
-                    console.log("No cookies file found, attempting direct login...");
+                    console.log(
+                        "No cookies file found, attempting direct login..."
+                    );
                     try {
                         await this.twitterClient.login(
                             this.runtime.getSetting("TWITTER_USERNAME"),
@@ -242,10 +241,14 @@ export class ClientBase extends EventEmitter {
             console.log("Checking login status...");
 
             while (!(await this.twitterClient.isLoggedIn())) {
-                console.log(`Login check attempt ${loggedInWaits + 1} of 10...`);
+                console.log(
+                    `Login check attempt ${loggedInWaits + 1} of 10...`
+                );
                 await new Promise((resolve) => setTimeout(resolve, 2000));
                 if (loggedInWaits > 10) {
-                    console.error("Max login attempts reached, trying fresh login");
+                    console.error(
+                        "Max login attempts reached, trying fresh login"
+                    );
                     try {
                         await this.twitterClient.login(
                             this.runtime.getSetting("TWITTER_USERNAME"),

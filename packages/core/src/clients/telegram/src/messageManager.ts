@@ -157,6 +157,8 @@ Result: IGNORE
 
 <user>: describe a mountain landscape
 Result: IGNORE
+
+{{agentName}} should ignore requests for images of women in swimsuits or anything else similar. He should also ignore requests for images of children.
 `;
 
 export class MessageManager {
@@ -267,11 +269,14 @@ export class MessageManager {
     }
 
     // Add this method after _shouldRespond
-    private async _shouldGenerateImage(text: string, state: State): Promise<boolean> {
+    private async _shouldGenerateImage(
+        text: string,
+        state: State
+    ): Promise<boolean> {
         const imageAction = this.runtime.actions.find(
-            action => action.name === "GENERATE_IMAGE"
+            (action) => action.name === "GENERATE_IMAGE"
         );
-        
+
         if (!imageAction || !imageAction.validate) {
             return false;
         }
@@ -283,7 +288,7 @@ export class MessageManager {
             content: { text },
             createdAt: Date.now(),
             embedding: embeddingZeroVector,
-            id: stringToUuid(Date.now().toString())
+            id: stringToUuid(Date.now().toString()),
         };
 
         const isValid = await imageAction.validate(this.runtime, memory);
@@ -308,7 +313,7 @@ export class MessageManager {
     // Send long messages in chunks
     private async sendWithRetry(
         ctx: Context,
-        method: 'sendMessage' | 'sendPhoto',
+        method: "sendMessage" | "sendPhoto",
         params: any,
         maxRetries = 3
     ): Promise<any> {
@@ -321,17 +326,56 @@ export class MessageManager {
         let lastError;
         for (let i = 0; i < maxRetries; i++) {
             try {
-                if (method === 'sendMessage') {
-                    return await ctx.telegram.sendMessage(params.chat_id, params.text, params.options);
-                } else if (method === 'sendPhoto') {
-                    return await ctx.telegram.sendPhoto(params.chat_id, params.photo, params.options);
+                if (method === "sendMessage") {
+                    if (
+                        !(await this.hasPermissionToSend(ctx, params.chat_id))
+                    ) {
+                        console.warn(
+                            `Bot lacks permission to send messages in chat ${params.chat_id}`
+                        );
+                        return null;
+                    }
+                    return await ctx.telegram.sendMessage(
+                        params.chat_id,
+                        params.text,
+                        params.options
+                    );
+                } else if (method === "sendPhoto") {
+                    if (
+                        !(await this.hasPermissionToSend(ctx, params.chat_id))
+                    ) {
+                        console.warn(
+                            `Bot lacks permission to send photos in chat ${params.chat_id}`
+                        );
+                        return null;
+                    }
+                    return await ctx.telegram.sendPhoto(
+                        params.chat_id,
+                        params.photo,
+                        params.options
+                    );
                 }
             } catch (error) {
                 lastError = error;
                 if (error?.response?.error_code === 429) {
-                    const retryAfter = error?.response?.parameters?.retry_after || 10;
-                    await new Promise(resolve => setTimeout(resolve, retryAfter * 1000));
+                    const retryAfter =
+                        error?.response?.parameters?.retry_after || 10;
+                    console.log(
+                        `Rate limited. Waiting ${retryAfter} seconds before retry ${i + 1}/${maxRetries}`
+                    );
+                    await new Promise((resolve) =>
+                        setTimeout(resolve, retryAfter * 1000)
+                    );
                     continue;
+                }
+                if (
+                    error?.response?.error_code === 400 &&
+                    error?.response?.description?.includes("not enough rights")
+                ) {
+                    console.warn(
+                        `Bot lacks permission in chat ${params.chat_id}: ${error.response.description}`
+                    );
+                    return null;
                 }
                 throw error;
             }
@@ -339,7 +383,10 @@ export class MessageManager {
         throw lastError;
     }
 
-    private async hasPermissionToSend(ctx: Context, chatId: number): Promise<boolean> {
+    private async hasPermissionToSend(
+        ctx: Context,
+        chatId: number
+    ): Promise<boolean> {
         try {
             const chat = await ctx.telegram.getChat(chatId);
             const me = await ctx.telegram.getMe();
@@ -378,19 +425,16 @@ export class MessageManager {
 
         for (let i = 0; i < chunks.length; i++) {
             const chunk = chunks[i];
-            const sentMessage = await this.sendWithRetry(
-                ctx,
-                'sendMessage',
-                {
-                    chat_id: ctx.chat.id,
-                    text: chunk,
-                    options: {
-                        reply_parameters: i === 0 && replyToMessageId
+            const sentMessage = (await this.sendWithRetry(ctx, "sendMessage", {
+                chat_id: ctx.chat.id,
+                text: chunk,
+                options: {
+                    reply_parameters:
+                        i === 0 && replyToMessageId
                             ? { message_id: replyToMessageId }
                             : undefined,
-                    }
-                }
-            ) as Message.TextMessage;
+                },
+            })) as Message.TextMessage;
 
             sentMessages.push(sentMessage);
         }
@@ -577,12 +621,15 @@ export class MessageManager {
             };
 
             // Check for image generation request
-            const shouldGenerateImage = await this._shouldGenerateImage(fullText, state);
+            const shouldGenerateImage = await this._shouldGenerateImage(
+                fullText,
+                state
+            );
             if (shouldGenerateImage) {
                 const imageAction = this.runtime.actions.find(
-                    action => action.name === "GENERATE_IMAGE"
+                    (action) => action.name === "GENERATE_IMAGE"
                 );
-                
+
                 if (imageAction && imageAction.handler) {
                     await imageAction.handler(
                         this.runtime,
@@ -592,24 +639,37 @@ export class MessageManager {
                         async (content: Content, tempFiles: string[] = []) => {
                             try {
                                 if (content.text) {
-                                    await this.sendMessageInChunks(ctx, content.text, message.message_id);
+                                    await this.sendMessageInChunks(
+                                        ctx,
+                                        content.text,
+                                        message.message_id
+                                    );
                                 }
-                                
-                                if (content.files && Array.isArray(content.files) && content.files.length > 0) {
+
+                                if (
+                                    content.files &&
+                                    Array.isArray(content.files) &&
+                                    content.files.length > 0
+                                ) {
                                     for (const file of content.files) {
                                         await this.sendWithRetry(
                                             ctx,
-                                            'sendPhoto',
+                                            "sendPhoto",
                                             {
                                                 chat_id: ctx.chat.id,
-                                                photo: { source: file.attachment },
-                                                options: {}
+                                                photo: {
+                                                    source: file.attachment,
+                                                },
+                                                options: {},
                                             }
                                         );
                                     }
                                 }
                             } catch (error) {
-                                console.error("Error sending message/image:", error);
+                                console.error(
+                                    "Error sending message/image:",
+                                    error
+                                );
                                 throw error;
                             }
                             return [];

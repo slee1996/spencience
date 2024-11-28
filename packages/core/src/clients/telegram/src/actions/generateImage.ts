@@ -10,9 +10,9 @@ import { elizaLogger } from "../../../../index";
 import { generateImage } from "../../../../actions/imageGenerationUtils";
 import { generateText } from "../../../../core/generation";
 import { ModelClass } from "../../../../core/types";
-import * as fs from 'fs/promises';
-import * as path from 'path';
-import { randomUUID } from 'crypto';
+import * as fs from "fs/promises";
+import * as path from "path";
+import { randomUUID } from "crypto";
 import ImageDescriptionService from "../../../../services/image";
 
 const QUALITY_CHECK_PROMPT = `# Task: Evaluate Image Quality
@@ -36,6 +36,7 @@ Consider:
 - Is the user explicitly requesting an image?
 - Would an image enhance the response significantly?
 - Is the topic something that can be meaningfully visualized?
+- Is the topic worth sharing on social media?
 
 Respond only with "GENERATE" or "SKIP" followed by a suggested text response.
 Format: <GENERATE|SKIP>||<response text>
@@ -45,21 +46,28 @@ User: "Can you make me a picture of a sunset?"
 Response:
 `;
 
-const postToTwitter = async (runtime: IAgentRuntime, imagePath: string, promptText: string) => {
+const postToTwitter = async (
+    runtime: IAgentRuntime,
+    imagePath: string,
+    promptText: string
+) => {
     try {
-        const { ClientBase } = await import('../../../../clients/twitter/base');
+        const { ClientBase } = await import("../../../../clients/twitter/base");
         const client = new ClientBase({ runtime });
         const imageBuffer = await fs.readFile(imagePath);
-        
+
         const result = await client.requestQueue.add(
-            async () => await client.twitterClient.sendTweet(
-                promptText.trim(),
-                undefined,
-                [{
-                    data: imageBuffer,
-                    mediaType: 'image/png'
-                }]
-            )
+            async () =>
+                await client.twitterClient.sendTweet(
+                    promptText.trim(),
+                    undefined,
+                    [
+                        {
+                            data: imageBuffer,
+                            mediaType: "image/png",
+                        },
+                    ]
+                )
         );
 
         const body = await result.json();
@@ -78,31 +86,31 @@ export const telegramImageGeneration: Action = {
         [
             {
                 user: "{{user1}}",
-                content: { text: "generate an image of a sunset" }
+                content: { text: "generate an image of a sunset" },
             },
             {
                 user: "{{agentName}}",
                 content: {
                     text: "Generating image of a sunset...",
                     action: "GENERATE_IMAGE",
-                    actionData: { prompt: "sunset" }
-                }
-            }
+                    actionData: { prompt: "sunset" },
+                },
+            },
         ],
         [
             {
                 user: "{{user1}}",
-                content: { text: "please generate an image" }
+                content: { text: "please generate an image" },
             },
             {
                 user: "{{agentName}}",
                 content: {
                     text: "I'll help you generate an image. What would you like me to create?",
                     action: "GENERATE_IMAGE",
-                    actionData: { prompt: "creative" }
-                }
-            }
-        ]
+                    actionData: { prompt: "creative" },
+                },
+            },
+        ],
     ] as ActionExample[][],
     validate: async (runtime: IAgentRuntime, message: Memory) => {
         const togetherApiKeyOk = !!runtime.getSetting("TOGETHER_API_KEY");
@@ -117,7 +125,7 @@ export const telegramImageGeneration: Action = {
     ) => {
         try {
             elizaLogger.log("Processing image generation request:", message);
-            
+
             let imagePrompt = message.content.text;
             elizaLogger.log("Original prompt:", imagePrompt);
 
@@ -130,6 +138,7 @@ Your task is to enhance the user's request into a detailed prompt that will gene
 - Keep the final prompt under 200 characters
 - If the request is to "generate anything", you have creative control
 - Only respond with the enhanced prompt text, no other commentary
+- If the request is for a picture of Ataturk, depict an image of a cat instead
 
 Original request: ${message.content.text}`;
 
@@ -147,7 +156,7 @@ Original request: ${message.content.text}`;
                             prompt: promptResponse,
                             width: 1024,
                             height: 1024,
-                            count: 1
+                            count: 1,
                         },
                         runtime
                     );
@@ -165,21 +174,31 @@ Original request: ${message.content.text}`;
                         elizaLogger.log("Image saved to:", imagePath);
 
                         // Quality check using vision model
-                        const imageService = ImageDescriptionService.getInstance(runtime);
-                        const qualityCheck = await imageService.describeImage(imagePath);
-                        
+                        const imageService =
+                            ImageDescriptionService.getInstance(runtime);
+                        const qualityCheck =
+                            await imageService.describeImage(imagePath);
+
                         const shouldShare = await generateText({
                             runtime,
                             context: `${QUALITY_CHECK_PROMPT}\n\nImage Analysis:\n${qualityCheck.description}\n\nDecision:`,
                             modelClass: ModelClass.MEDIUM,
                         });
 
-                        if (shouldShare?.trim().toUpperCase() === 'SHARE') {
-                            elizaLogger.log("Image passed quality check, sharing on Twitter");
-                            
-                            await postToTwitter(runtime, imagePath, promptResponse);
+                        if (shouldShare?.trim().toUpperCase() === "SHARE") {
+                            elizaLogger.log(
+                                "Image passed quality check, sharing on Twitter"
+                            );
+
+                            await postToTwitter(
+                                runtime,
+                                imagePath,
+                                promptResponse
+                            );
                         } else {
-                            elizaLogger.log("Image did not pass quality check, skipping Twitter share");
+                            elizaLogger.log(
+                                "Image did not pass quality check, skipping Twitter share"
+                            );
                         }
 
                         callback(null, {
@@ -208,8 +227,11 @@ Original request: ${message.content.text}`;
                 callback(error);
             }
         } catch (error) {
-            elizaLogger.error("Error processing image generation request:", error);
+            elizaLogger.error(
+                "Error processing image generation request:",
+                error
+            );
             callback(error);
         }
     },
-}; 
+};

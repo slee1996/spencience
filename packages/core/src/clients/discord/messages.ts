@@ -47,6 +47,8 @@ const discordShouldRespondTemplate =
     `# Task: Decide if {{agentName}} should respond.
 About {{agentName}}:
 {{bio}}
+{{lore}}
+{{interests}}
 
 # INSTRUCTIONS: Determine if {{agentName}} should respond to the message and participate in the conversation. Do not comment. Just respond with "RESPOND" or "IGNORE" or "STOP".
 
@@ -134,6 +136,9 @@ export const discordMessageHandlerTemplate =
 About {{agentName}}:
 {{bio}}
 {{lore}}
+{{people}}
+{{topics}}
+{{characterPostExamples}}
 
 Examples of {{agentName}}'s dialog and actions:
 {{characterMessageExamples}}
@@ -151,7 +156,9 @@ Note that {{agentName}} is capable of reading/seeing/hearing various forms of me
 
 {{recentMessages}}
 
-# Instructions: Write the next message for {{agentName}}. Include an action, if appropriate. {{actionNames}}
+{{recentMemories}}
+
+# Instructions: Write the next message in the voice and style of {{agentName}}. Include an action, if appropriate. {{actionNames}}
 ` + messageCompletionFooter;
 
 export async function sendMessageInChunks(
@@ -847,7 +854,7 @@ export class MessageManager {
 
         // Get all relevant memories for context
         const memories = await this.runtime.messageManager.getMemories({
-            // roomId,
+            roomId,
             count: 50, // Get a reasonable number of recent messages
             unique: false, // Include all messages
         });
@@ -861,6 +868,7 @@ export class MessageManager {
         contextWithMemories = memories.reduce((acc, memory) => {
             return acc + `\n${memory.content.text}`;
         }, contextWithMemories);
+        console.log("Context with memories:", contextWithMemories);
 
         const response = await generateMessageResponse({
             runtime: this.runtime,
