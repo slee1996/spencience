@@ -206,6 +206,7 @@ export async function sendTweet(
     twitterUsername: string,
     inReplyTo: string
 ): Promise<Memory[]> {
+    console.log()
     const chunk = truncateTweetContent(content.text);
     const sentTweets: Tweet[] = [];
 

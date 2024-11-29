@@ -19,19 +19,13 @@ import { composeContext } from "../../../core/context";
 const discordImageGenerationTemplate = (
     originalPrompt: string
 ) => `# Task: Enhance the image generation prompt
-Your task is to enhance the user's request into a detailed prompt that will generate the best possible image. The goal is also to make sure that it fits into a theme that is consistent with Centience, using the following tags:
-- IMAX
-- filmic
-- cinematic
+Your task is to enhance the user's request into a detailed prompt that will generate the best possible image. The goal is also to make sure that it fits into a theme that is consistent with Spencience, using the following tags:
 - 8K
 - 4K
 - 1080p
 - 720p  
 - photorealistic
 - hyper-realistic
-- hyper-detailed
-- filmic
-- cinematic
 
 # Instructions
 - Focus on artistic style, mood, lighting, composition and important details
@@ -147,49 +141,61 @@ export const discordImageGeneration: Action = {
                         [tempFileName]
                     );
 
-                
-                        try {
-                            const tweetContext = `# Task: Generate a post in the voice and style of ${runtime.character.name}
+                    try {
+                        const tweetContext = `# Task: Generate a post in the voice and style of ${runtime.character.name}
 Write a single sentence about the following image (without directly describing it), from your perspective. Be creative and engaging. No emojis.
+
+## Lore
+${runtime.character.lore}
+
+## Style
+${runtime.character.style}
+
+## Post Examples
+${runtime.character.postExamples}
 
 Image description: ${imagePrompt}
 
 Your response can be as long as you want, even long paragraphs as long as they are interesting.`;
 
-                            elizaLogger.log("Generating tweet text for image...");
-                            const tweetText = await generateText({
-                                runtime,
-                                context: tweetContext,
-                                modelClass: ModelClass.LARGE,
-                            });
+                        elizaLogger.log("Generating tweet text for image...");
+                        const tweetText = await generateText({
+                            runtime,
+                            context: tweetContext,
+                            modelClass: ModelClass.LARGE,
+                        });
 
-                            const finalTweetText = tweetText.trim() // Ensure tweet length
-                            
-                            elizaLogger.log("Attempting to post to Twitter with text:", finalTweetText);
-
-                            // Create a client instance
-                            const client = new ClientBase({ runtime });
-                            const result = await client.requestQueue.add(
-                                async () => await client.twitterClient.sendTweet(
-                                    finalTweetText,
-                                    undefined,
-                                    [
-                                        {
-                                            data: imageBuffer,
-                                            mediaType: "image/png",
-                                        },
-                                    ]
-                                )
-                        );
-
-                        const body = await result.json();
-                        const tweetResult =
-                            body.data.create_tweet.tweet_results.result;
+                        const finalTweetText = tweetText.trim(); // Ensure tweet length
 
                         elizaLogger.log(
-                            "Successfully posted image to Twitter:",
-                            tweetResult
+                            "Attempting to post to Twitter with text:",
+                            finalTweetText
                         );
+
+                        // Create a client instance
+                        // const client = new ClientBase({ runtime });
+                        // const result = await client.requestQueue.add(
+                        //     async () =>
+                        //         await client.twitterClient.sendTweet(
+                        //             finalTweetText,
+                        //             [
+                        //                 {
+                        //                     data: imageBuffer,
+                        //                     mediaType: "image/png",
+                        //                 },
+                        //             ],
+                        //             undefined
+                        //         )
+                        // );
+
+                        // const body = await result.json();
+                        // const tweetResult =
+                        //     body.data.create_tweet.tweet_results.result;
+
+                        // elizaLogger.log(
+                        //     "Successfully posted image to Twitter:",
+                        //     tweetResult
+                        // );
 
                         await callback(
                             {

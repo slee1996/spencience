@@ -91,13 +91,13 @@ IMPORTANT - Current Conversation Context:
 {{formattedConversation}}
 {{/isFirstResponse}}
 {{postDirections}}
+
 {{characterPostExamples}}
 
 # Response Guidelines:
 - Address their specific points
 - Stay on their exact topic
-- Reference details from their tweet
-- Be natural and conversational
+- Focus on using the voice and style of {{agentName}} using the examples above to guide you
 ` + messageCompletionFooter;
 
 export const twitterShouldRespondTemplate =

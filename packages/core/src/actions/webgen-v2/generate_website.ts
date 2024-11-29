@@ -8,14 +8,25 @@ import {
     ModelClass,
     State,
 } from "../../core/types.ts";
-import {
-    elizaLogger,
-    generateText,
-} from "../../index.ts";
+import { elizaLogger, generateText } from "../../index.ts";
 import { shouldCreateWebsiteTemplate } from "./templates.ts";
 import { detectContentType } from "./utils/detectRequestedContentType.ts";
+import { generateEnhancedWebsitePrompt } from "./utils/generateEnhancedPrompt.ts";
 
 const DEPLOYMENT_TIMEOUT = 5 * 60 * 1000;
+
+// LOOP
+/*
+- generate enhanced prompt
+- generate initial website
+-- detect and apply continuation if needed
+- scan html for links
+- generate pages for each link
+-- detect and apply continuation if needed
+- validate html
+-- apply fixes if needed
+- deploy to github
+*/
 
 export const WEBSITE_GENERATION: Action = {
     name: "GENERATE_WEBSITE",
@@ -87,7 +98,12 @@ export const WEBSITE_GENERATION: Action = {
             elizaLogger.log("User ID:", userId);
 
             const websitePrompt = message.content.text;
-            elizaLogger.log("Website prompt received:", websitePrompt);
+            const enhancedWebsitePrompt = await generateEnhancedWebsitePrompt(
+                websitePrompt,
+                runtime,
+                state
+            );
+            elizaLogger.log("Website prompt received:", enhancedWebsitePrompt);
             // Add a short delay to allow for rate limiting and processing
             await new Promise((resolve) => setTimeout(resolve, 1000));
 

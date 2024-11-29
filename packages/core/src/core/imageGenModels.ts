@@ -5,8 +5,8 @@ export enum ImageGenModel {
 
 export const imageGenModels = {
     [ImageGenModel.TogetherAI]: {
-        steps: 4,
-        subModel: "black-forest-labs/FLUX.1-schnell",
+        steps: 10,
+        subModel: "black-forest-labs/FLUX.1-dev",
     },
     [ImageGenModel.Dalle]: {
         steps: 0,

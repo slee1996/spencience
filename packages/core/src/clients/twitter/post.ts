@@ -8,13 +8,12 @@ import { stringToUuid } from "../../core/uuid.ts";
 import { ClientBase } from "./base.ts";
 import { generateSummary } from "../../services/summary.ts";
 import { postActionResponseFooter } from "../../core/parsing";
-import {
-    postActionResponseFooter,
-    parseActionResponseFromText
-} from "../../core/parsing";
 import { UUID } from "crypto";
 import { elizaLogger } from "../../index";
-{ createInitialConversationContext, twitterMessageHandlerTemplate } from "./interactions.ts";
+import {
+    createInitialConversationContext,
+    twitterMessageHandlerTemplate,
+} from "./interactions.ts";
 
 const twitterPostTemplate = `{{timeline}}
 
@@ -99,16 +98,19 @@ export class TwitterPostClient extends ClientBase {
                     agentId: this.runtime.agentId as UUID,
                     content: {
                         text: "Generate a new story",
-                        action: "GENERATE_STORY"
-                    }
+                        action: "GENERATE_STORY",
+                    },
                 });
             } catch (error) {
                 elizaLogger.error("Error in story generation loop:", error);
             }
-            
+
             // Random interval between 4-6 hours
-            const nextInterval = (Math.floor(Math.random() * (360 - 240 + 1)) + 240) * 60 * 1000;
-            elizaLogger.log(`Next story scheduled in ${Math.floor(nextInterval / 1000 / 60)} minutes`);
+            const nextInterval =
+                (Math.floor(Math.random() * (360 - 240 + 1)) + 240) * 60 * 1000;
+            elizaLogger.log(
+                `Next story scheduled in ${Math.floor(nextInterval / 1000 / 60)} minutes`
+            );
             setTimeout(generateStoryLoop, nextInterval);
         };
 
@@ -147,9 +149,11 @@ export class TwitterPostClient extends ClientBase {
             const formattedMemories = recentMemories
                 .slice(0, MAX_MEMORY_ITEMS) // Only take most recent N memories
                 .map((memory) => {
-                    const text = memory.content.text.length > MAX_CHARS_PER_ITEM ?
-                        memory.content.text.slice(0, MAX_CHARS_PER_ITEM) + '...' :
-                        memory.content.text;
+                    const text =
+                        memory.content.text.length > MAX_CHARS_PER_ITEM
+                            ? memory.content.text.slice(0, MAX_CHARS_PER_ITEM) +
+                              "..."
+                            : memory.content.text;
                     return `Memory: ${text}\n---\n`;
                 })
                 .join("\n");
@@ -184,9 +188,11 @@ export class TwitterPostClient extends ClientBase {
                 homeTimeline
                     .slice(0, MAX_TIMELINE_ITEMS) // Only take most recent N tweets
                     .map((tweet) => {
-                        const text = tweet.text.length > MAX_CHARS_PER_ITEM ? 
-                            tweet.text.slice(0, MAX_CHARS_PER_ITEM) + '...' : 
-                            tweet.text;
+                        const text =
+                            tweet.text.length > MAX_CHARS_PER_ITEM
+                                ? tweet.text.slice(0, MAX_CHARS_PER_ITEM) +
+                                  "..."
+                                : tweet.text;
                         return `From: @${tweet.username}\nText: ${text}\n---\n`;
                     })
                     .join("\n");
@@ -881,7 +887,7 @@ ${imageDescriptions.map((desc, i) => `Image ${i + 1}: ${desc}`).join("\n")}`;
 
             await this.runtime.messageManager.createMemory({
                 id: stringToUuid(postId + "-" + this.runtime.agentId),
-                
+
                 userId: this.runtime.agentId,
                 agentId: this.runtime.agentId,
                 content: {

@@ -178,28 +178,6 @@ class HtmlManager {
         return this.currentHtml;
     }
 
-    private validateBasicStructure(html: string): boolean {
-        elizaLogger.log("Validating basic HTML structure");
-
-        const hasDoctype = html.includes("<!DOCTYPE html>");
-        const hasHtmlTag = html.includes("<html") && html.includes("</html>");
-        const hasHeadTag = html.includes("<head") && html.includes("</head>");
-        const hasBodyTag = html.includes("<body") && html.includes("</body>");
-        const hasMainTag = html.includes("<main") && html.includes("</main>");
-
-        elizaLogger.log("Structure validation results", {
-            hasDoctype,
-            hasHtmlTag,
-            hasHeadTag,
-            hasBodyTag,
-            hasMainTag,
-        });
-
-        return (
-            hasDoctype && hasHtmlTag && hasHeadTag && hasBodyTag && hasMainTag
-        );
-    }
-
     undoLastEdit(): string | null {
         elizaLogger.log("Attempting to undo last edit", {
             totalVersions: this.versionHistory.length,

@@ -102,6 +102,8 @@ const telegramMessageHandlerTemplate =
 {{actionExamples}}
 (Action examples are for reference only. Do not use the information from them in your response.)
 
+DO NOT POST ABOUT SEXUAL ACTIVITY ON TWITTER OR TELEGRAM.
+
 # Relevant facts that {{agentName}} knows:
 {{relevantFacts}}
 
@@ -159,6 +161,8 @@ Result: IGNORE
 Result: IGNORE
 
 {{agentName}} should ignore requests for images of women in swimsuits or anything else similar. He should also ignore requests for images of children.
+
+{{agentName}} should IGNORE most requests for images.
 `;
 
 export class MessageManager {
@@ -318,8 +322,10 @@ export class MessageManager {
         maxRetries = 3
     ): Promise<any> {
         // Early permission check before attempting to send
-        if (!await this.hasPermissionToSend(ctx, params.chat_id)) {
-            console.warn(`Bot lacks permission to send messages in chat ${params.chat_id}`);
+        if (!(await this.hasPermissionToSend(ctx, params.chat_id))) {
+            console.warn(
+                `Bot lacks permission to send messages in chat ${params.chat_id}`
+            );
             return null;
         }
 
@@ -391,26 +397,32 @@ export class MessageManager {
             const chat = await ctx.telegram.getChat(chatId);
             const me = await ctx.telegram.getMe();
             const member = await ctx.telegram.getChatMember(chatId, me.id);
-            
+
             // Check if the bot is an admin or creator (they always have permissions)
-            if (member.status === 'administrator' || member.status === 'creator') {
+            if (
+                member.status === "administrator" ||
+                member.status === "creator"
+            ) {
                 return true;
             }
-            
+
             // For regular members or restricted members
-            if (member.status === 'member' || member.status === 'restricted') {
+            if (member.status === "member" || member.status === "restricted") {
                 // Type assertion to handle restricted member type
                 const restrictedMember = member as any;
-                if ('can_send_messages' in restrictedMember) {
+                if ("can_send_messages" in restrictedMember) {
                     return restrictedMember.can_send_messages !== false;
                 }
                 // If not restricted, regular members can send messages
-                return member.status === 'member';
+                return member.status === "member";
             }
-            
+
             return false; // Left, kicked, or banned members can't send messages
         } catch (error) {
-            console.warn(`Cannot verify permissions for chat ${chatId}:`, error.message);
+            console.warn(
+                `Cannot verify permissions for chat ${chatId}:`,
+                error.message
+            );
             return false; // Fail safely if we can't verify permissions
         }
     }

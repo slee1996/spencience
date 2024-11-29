@@ -6,6 +6,7 @@ import OpenAI from "openai";
 import { elizaLogger } from "../index";
 import { generateText } from "../core/generation.ts";
 import { ModelClass } from "../core/types.ts";
+import Replicate from "replicate";
 
 export const imagePromptTemplate = `# Task: Enhance the image generation prompt
 Your task is to enhance the user's request into a detailed prompt that will generate the best possible image.
@@ -44,7 +45,7 @@ Original request: ${originalPrompt}
 Enhanced prompt:`;
 
         elizaLogger.log("Sending context to llama:", context);
-        
+
         const promptResponse = await generateText({
             runtime,
             context,
@@ -79,25 +80,100 @@ export const generateImage = async (
     try {
         // Enhance the prompt first
         const enhancedPrompt = await enhancePrompt(data.prompt, runtime);
-        elizaLogger.log("Using enhanced prompt for generation:", enhancedPrompt);
+        elizaLogger.log(
+            "Using enhanced prompt for generation:",
+            enhancedPrompt
+        );
 
         // Rest of the existing generateImage code, but use enhancedPrompt instead of data.prompt
         const imageGenModel = runtime.imageGenModel;
         const model = getImageGenModel(imageGenModel);
-        const apiKey =
-            imageGenModel === ImageGenModel.TogetherAI
-                ? runtime.getSetting("TOGETHER_API_KEY")
-                : runtime.getSetting("OPENAI_API_KEY");
+        const apiKey = runtime.getSetting("REPLICATE_API_TOKEN");
+        // imageGenModel === ImageGenModel.TogetherAI
+        //     ? runtime.getSetting("TOGETHER_API_KEY")
+        //     : runtime.getSetting("OPENAI_API_KEY");
 
         let { count } = data;
         if (!count) {
             count = 1;
         }
+        if (apiKey === runtime.getSetting("REPLICATE_API_TOKEN")) {
+            const input = {
+                prompt: enhancedPrompt,
+                width: data.width,
+                height: data.height,
+                prompt_upsampling: false,
+                safety_checker: false,
+                safety_tolerance: 6,
+            };
+            const replicate = new Replicate({
+                auth: apiKey,
+            });
 
-        if (imageGenModel === ImageGenModel.TogetherAI) {
+            const response = await replicate.run(
+                "black-forest-labs/flux-1.1-pro",
+                {
+                    input,
+                }
+            );
+
+            // Handle ReadableStream response
+            if (response instanceof ReadableStream) {
+                const reader = response.getReader();
+                const chunks = [];
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    chunks.push(value);
+                }
+
+                const concatenated = new Uint8Array(
+                    chunks.reduce((acc, chunk) => acc + chunk.length, 0)
+                );
+                let offset = 0;
+                for (const chunk of chunks) {
+                    concatenated.set(chunk, offset);
+                    offset += chunk.length;
+                }
+
+                const base64 =
+                    "data:image/jpeg;base64," +
+                    Buffer.from(concatenated).toString("base64");
+                return { success: true, data: [base64] };
+            }
+
+            // Handle array of URLs response
+            if (Array.isArray(response)) {
+                const urls = response.map((r) => r.url).filter(Boolean);
+                if (urls.length === 0) {
+                    throw new Error("No valid image URLs in response");
+                }
+
+                const base64s = await Promise.all(
+                    urls.map(async (url) => {
+                        const response = await fetch(url);
+                        if (!response.ok) {
+                            throw new Error(
+                                `Failed to fetch image: ${response.statusText}`
+                            );
+                        }
+                        const blob = await response.blob();
+                        const buffer = await blob.arrayBuffer();
+                        let base64 = Buffer.from(buffer).toString("base64");
+                        base64 = "data:image/jpeg;base64," + base64;
+                        return base64;
+                    })
+                );
+                return { success: true, data: base64s };
+            }
+
+            throw new Error("Unexpected response format from Replicate API");
+        } else if (imageGenModel === ImageGenModel.TogetherAI) {
+            console.log("ApiKey:", apiKey);
             const together = new Together({ apiKey });
             const response = await together.images.create({
-                model: "black-forest-labs/FLUX.1.1-pro",
+                model: "black-forest-labs/FLUX.1-dev",
                 prompt: enhancedPrompt,
                 width: data.width,
                 height: data.height,
@@ -132,7 +208,7 @@ export const generateImage = async (
             }
             const openai = new OpenAI({ apiKey });
             const response = await openai.images.generate({
-                model: model.subModel,
+                model: "dall-e-3",
                 prompt: enhancedPrompt,
                 size: targetSize as "1024x1024" | "1792x1024" | "1024x1792",
                 n: count,
