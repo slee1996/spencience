@@ -73,12 +73,12 @@ Current Context:
 {{formattedConversation}}
 
 # Task: Write a focused first response
-- You MUST stay on the exact topic of their tweet
+- You MUST stay on the general topic of their tweet
 - You MUST address their specific points
-- You MUST NOT introduce any new topics or tangents
 - You MUST NOT include your general interests or knowledge unless directly relevant
 - Seek to add something new to the conversation
 - Do NOT simply repeat back their points
+- Do NOT simply rephrase their points
 
 {{/isFirstResponse}}
 {{^isFirstResponse}}
@@ -96,7 +96,9 @@ IMPORTANT - Current Conversation Context:
 
 # Response Guidelines:
 - Address their specific points
-- Stay on their exact topic
+- Stay on their general topic
+- Do NOT simply repeat back their points
+- Do NOT simply rephrase their points
 - Focus on using the voice and style of {{agentName}} using the examples above to guide you
 ` + messageCompletionFooter;
 

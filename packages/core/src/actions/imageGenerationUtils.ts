@@ -104,7 +104,7 @@ export const generateImage = async (
                 height: data.height,
                 prompt_upsampling: false,
                 safety_checker: false,
-                safety_tolerance: 6,
+                safety_tolerance: 2,
             };
             const replicate = new Replicate({
                 auth: apiKey,

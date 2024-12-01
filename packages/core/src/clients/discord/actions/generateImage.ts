@@ -32,6 +32,7 @@ Your task is to enhance the user's request into a detailed prompt that will gene
 - Keep the final prompt under 200 characters
 - If the request is to "generate anything", you have creative control
 - Only respond with the enhanced prompt text, no other commentary
+- Keep it safe and respectful
 
 Original request: ${originalPrompt}
 
