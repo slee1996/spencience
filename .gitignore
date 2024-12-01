@@ -45,3 +45,4 @@ cache/*
 twitter_archive
 test.html
 test.json
+.env.nyaako
