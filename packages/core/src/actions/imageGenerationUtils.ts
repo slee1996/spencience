@@ -103,7 +103,7 @@ export const generateImage = async (
                 width: data.width,
                 height: data.height,
                 prompt_upsampling: false,
-                safety_checker: false,
+                disable_safety_checker: false,
                 safety_tolerance: 2,
             };
             const replicate = new Replicate({

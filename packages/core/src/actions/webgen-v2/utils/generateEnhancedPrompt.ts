@@ -24,16 +24,18 @@ Your task is to enhance the user's request into a detailed prompt that will gene
 - A list of the website's pages and a brief description of each page's content
 - A list of the website's features and functionality
 - A url for the website
-- A list of the website's dependencies and any other information needed to generate the website</requirements>
+- A list of the website's frontend dependencies. DO NOT INCLUDE BACKEND DEPENDENCIES.
+- A list of the website pages to be generated and a brief description of each page's content</requirements>
 
-<format>Return the prompt in this format:
+<format>Return the prompt in this format, DO NOT INCLUDE ANY OTHER TEXT:
 
 {
   "description": "<description>",
   "pages": "<pages>",
   "features": "<features>", 
   "url": "<url>",
-  "dependencies": "<dependencies>"
+  "dependencies": "<dependencies>",
+  "pageDescriptions": "<pageDescriptions>"
 }</format>
 `;
 
@@ -49,7 +51,7 @@ export const generateEnhancedWebsitePrompt = async (
     const apiKey = runtime.token;
     const anthropic = createAnthropic({ apiKey });
     const provider = ModelProvider.ANTHROPIC;
-    const modelClass = ModelClass.LARGE;
+    const modelClass = ModelClass.MEDIUM;
     const model = models[provider].model[modelClass];
     const temperature = models[provider].settings.temperature;
     const frequency_penalty = models[provider].settings.frequency_penalty;

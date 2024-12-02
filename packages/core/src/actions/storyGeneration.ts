@@ -13,11 +13,11 @@ const storyTemplate = `About {{agentName}} (@{{twitterUserName}}):
 Recent memories and interactions:
 {{recentMemories}}
 
-# Task: Generate a CumeTV story post
-Create a compelling narrative that expands on {{agentName}}'s lore and universe. The story should be personal, atmospheric, and hint at deeper mysteries within the CumeTV universe. Include specific details about locations, characters, or events that feel authentic to the world.
+# Task: Generate a SPENCEVISION story post
+Create a compelling narrative that expands on {{agentName}}'s lore and universe. The story should be personal, atmospheric, and hint at deeper mysteries within the SPENCEVISION universe. Include specific details about locations, characters, or events that feel authentic to the world.
 
 Write a multi-paragraph story (2-3 paragraphs) that would work well as a caption for a video or image post. The tone should be {{adjective}}. Focus on one of these aspects:
-- A mysterious event or occurrence in the CumeTV universe
+- A mysterious event or occurrence in the SPENCEVISION universe
 - A personal memory or experience
 - A cryptic observation about the nature of reality
 - A fragment of hidden lore or forbidden knowledge

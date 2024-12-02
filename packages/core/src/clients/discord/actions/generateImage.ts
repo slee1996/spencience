@@ -20,19 +20,20 @@ const discordImageGenerationTemplate = (
     originalPrompt: string
 ) => `# Task: Enhance the image generation prompt
 Your task is to enhance the user's request into a detailed prompt that will generate the best possible image. The goal is also to make sure that it fits into a theme that is consistent with Spencience, using the following tags:
-- 8K
-- 4K
-- 1080p
-- 720p  
-- photorealistic
-- hyper-realistic
+- vaporwave
+- neon
+- cyberpunk
+- cybernetic
+- VHS
+- VHS glitch
+- VHS static
+- VHS noise
 
 # Instructions
 - Focus on artistic style, mood, lighting, composition and important details
 - Keep the final prompt under 200 characters
 - If the request is to "generate anything", you have creative control
 - Only respond with the enhanced prompt text, no other commentary
-- Keep it safe and respectful
 
 Original request: ${originalPrompt}
 

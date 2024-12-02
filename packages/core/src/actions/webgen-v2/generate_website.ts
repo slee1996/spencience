@@ -15,19 +15,6 @@ import { generateEnhancedWebsitePrompt } from "./utils/generateEnhancedPrompt.ts
 
 const DEPLOYMENT_TIMEOUT = 5 * 60 * 1000;
 
-// LOOP
-/*
-- generate enhanced prompt
-- generate initial website
--- detect and apply continuation if needed
-- scan html for links
-- generate pages for each link
--- detect and apply continuation if needed
-- validate html
--- apply fixes if needed
-- deploy to github
-*/
-
 export const WEBSITE_GENERATION: Action = {
     name: "GENERATE_WEBSITE",
     similes: [
@@ -58,32 +45,37 @@ export const WEBSITE_GENERATION: Action = {
         // Update state with recent messages
         state = await runtime.updateRecentMessageState(state);
 
-        // Use the template to determine if we should create a website
-        try {
-            const context = composeContext({
-                state,
-                template: shouldCreateWebsiteTemplate,
-            });
-            console.log("Composed context:", context);
+        // Simple keyword detection for website creation intent
+        const messageText = message.content.text.toLowerCase();
+        const websiteKeywords = [
+            "website",
+            "webpage",
+            "web page",
+            "site",
+            "landing page",
+        ];
 
-            const shouldCreateResponse = await generateText({
-                runtime,
-                context,
-                modelClass: ModelClass.MEDIUM,
-            });
-            console.log("Should create response:", shouldCreateResponse);
+        const hasWebsiteKeyword = websiteKeywords.some((keyword) =>
+            messageText.includes(keyword)
+        );
 
-            const shouldCreate = shouldCreateResponse
-                .trim()
-                .toUpperCase()
-                .includes("YES");
-            elizaLogger.log(`Should create website? ${shouldCreate}`);
+        const actionKeywords = [
+            "create",
+            "make",
+            "build",
+            "generate",
+            "setup",
+            "deploy",
+        ];
 
-            return shouldCreate;
-        } catch (error) {
-            elizaLogger.error("Error in website validation:", error);
-            return false;
-        }
+        const hasActionKeyword = actionKeywords.some((keyword) =>
+            messageText.includes(keyword)
+        );
+
+        const shouldCreate = hasWebsiteKeyword && hasActionKeyword;
+        elizaLogger.log(`Should create website? ${shouldCreate}`);
+
+        return shouldCreate;
     },
     handler: async (
         runtime: IAgentRuntime,
@@ -92,6 +84,18 @@ export const WEBSITE_GENERATION: Action = {
         options: any,
         callback: HandlerCallback
     ): Promise<Content | void> => {
+        // LOOP
+        /*
+            - generate enhanced prompt
+            - generate initial website
+            -- detect and apply continuation if needed
+            - scan html for links
+            - generate pages for each link
+            -- detect and apply continuation if needed
+            - validate html
+            -- apply fixes if needed
+            - deploy to github
+        */
         try {
             state = (await runtime.composeState(message)) as State;
             const userId = runtime.agentId;
@@ -104,89 +108,24 @@ export const WEBSITE_GENERATION: Action = {
                 state
             );
             elizaLogger.log("Website prompt received:", enhancedWebsitePrompt);
+            // {
+            //     "description": "A modern, playful website dedicated to celebrating dogs through interactive features and community engagement. The site will showcase different breeds, offer training tips, and connect dog lovers worldwide.",
+            //     "pages": "home, breeds, training, community, health, adoption, gallery",
+            //     "features": "breed comparison tool, training progress tracker, community photo sharing, health symptom checker, adoption listings feed, interactive dog breed quiz, real-time chat for dog owners",
+            //     "url": "goodestboys.spencience.com",
+            //     "dependencies": "React, TailwindCSS, Framer Motion, React Router, React Query, DaisyUI, Three.js for interactive 3D dog models, Socket.io-client for chat",
+            //     "pageDescriptions": {
+            //       "home": "Landing page with featured breeds, latest community posts, and quick access to tools",
+            //       "breeds": "Comprehensive database of dog breeds with interactive 3D models and comparison tools",
+            //       "training": "Interactive training guides with progress tracking and video tutorials",
+            //       "community": "Social space for dog owners with photo sharing and real-time chat",
+            //       "health": "Veterinary resources and symptom checker with emergency contact info",
+            //       "adoption": "Real-time feed of available dogs from local shelters with filtering options",
+            //       "gallery": "User-submitted photos with voting system and featured weekly selections"
+            //     }
+            //   }
             // Add a short delay to allow for rate limiting and processing
-            await new Promise((resolve) => setTimeout(resolve, 1000));
-
-            elizaLogger.log("Starting website generation process");
-
-            // Create a promise that rejects after timeout
-            const timeoutPromise = new Promise((_, reject) => {
-                setTimeout(() => {
-                    reject(
-                        new Error(
-                            "Website generation timed out after 5 minutes"
-                        )
-                    );
-                }, DEPLOYMENT_TIMEOUT);
-            });
-
-            // Create the main generation handling promise
-            const generationPromise = (async () => {
-                const contentType = await detectContentType(
-                    runtime,
-                    websitePrompt
-                );
-
-                // Generate HTML content
-                const homeContent = await generateHtmlContent(
-                    contentType,
-                    runtime,
-                    state,
-                    websitePrompt
-                );
-
-                const sanitizedHomeContent = homeContent
-                    // eslint-disable-next-line no-control-regex
-                    .replace(/[^\u0009\u000A\u000D\x20-\x7E\xA0-\uFFFF]/g, "")
-                    .replace(/[\u2028\u2029]/g, "\n");
-
-                const pages = { home: sanitizedHomeContent };
-
-                await createHtmlFiles(pages);
-
-                const token = runtime.getSetting("GITHUB_TOKEN");
-                const username = runtime.getSetting("GITHUB_USERNAME");
-
-                if (!token || !username) {
-                    throw new Error("GitHub credentials not found");
-                }
-
-                const repoName = `generated-website-${Date.now()}`;
-
-                const deployingResponse: Content = {
-                    text: "Website is being deployed to GitHub Pages. This will take a few minutes...",
-                    action: "CREATE_WEBSITE",
-                    source: message.content.source,
-                };
-                await callback(deployingResponse, []);
-
-                const siteUrl = await deployToGithub({
-                    repoName,
-                    githubToken: token,
-                    username,
-                });
-
-                await new Promise((resolve) =>
-                    setTimeout(resolve, 2 * 60 * 1000)
-                );
-
-                return siteUrl;
-            })();
-
-            // Race between timeout and generation handling
-            const siteUrl = await Promise.race([
-                generationPromise,
-                timeoutPromise,
-            ]);
-
-            const response: Content = {
-                text: `I've created and deployed a website based on our conversation. You can view it at: ${siteUrl}`,
-                action: "CREATE_WEBSITE",
-                source: message.content.source,
-            };
-
-            await callback(response, []);
-            return response;
+            return;
         } catch (error) {
             elizaLogger.error("Website creation failed:", error);
             const errorResponse: Content = {

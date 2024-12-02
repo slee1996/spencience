@@ -181,7 +181,7 @@ Opening hook:`;
                 modelClass: ModelClass.LARGE,
             });
 
-            const openingTweet = `CUMETV: CHANNEL ${channelNumber}
+            const openingTweet = `SPENCEVISION: CHANNEL ${channelNumber}
 ${rawOpeningTweet}`;
 
             // Generate video for opening tweet
@@ -214,7 +214,7 @@ Middle part:`;
             });
 
             // Generate closing tweet early
-            const closingContext = `# Task: Generate the closing part of the CumeTV story
+            const closingContext = `# Task: Generate the closing part of the SPENCEVISION story
 Following these previous parts:
 ${openingTweet}
 ${middleTweet}
